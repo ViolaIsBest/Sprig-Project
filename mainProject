@@ -6,13 +6,16 @@
 @addedOn: 2023-08-08
 */
 
+//sprites
 const player = "p";
 const wall = "w";
 const goal = "g";
 const enemy1 = "e";
 const key = "k";
 const push = "pu";
+//variables
 const totalNum = 20;
+let noMove = false;
 
 setLegend(
 	[ player, bitmap`
@@ -102,7 +105,7 @@ D55769909996755D
 ................`]
 )
 
-setSolids([player, wall, enemy1])
+setSolids([player, enemy1])
 
 let level = 0
 const levels = [
@@ -125,31 +128,88 @@ setPushables({
 })
 
 onInput("s", () => {
-	getFirst(player).y += 1;
+  getFirst(player).y += 1;
+  if(checkMovement() === true){
+    getFirst(player).y -= 1;
+    noMove = true;
+  }
 })
 
 onInput("a", () => {
   getFirst(player).x -= 1;
+  if(checkMovement() === true){
+    getFirst(player).x += 1;
+    noMove = true;
+  }
 })
 
 onInput("d", () => {
   getFirst(player).x += 1;
+  if(checkMovement() === true){
+    getFirst(player).x -= 1;
+    noMove = true;
+  }
 })
 
 onInput("w", () => {
   getFirst(player).y -= 1;
+  if(checkMovement() === true){
+    getFirst(player).y += 1;
+    noMove = true;
+  }
 })  
   
 afterInput(() => {
-  let goalsCovered = tilesWith(goal, player).length;
-  
-  if(goalsCovered > 0){
-    level += 1;
-    setMap(levels[level]);
-    /*if (level > totalNum){
-      //finish level
-    } else {
-      setMap(levels[level]);
-    }*/
+  if(noMove === false){
+    let goalsCovered = tilesWith(goal, player).length;
+    
+    const allEnemies = getAll(enemy1);
+    allEnemies.forEach((enemy1) => moveEnemy(enemy1));
+    
+    moveEnemy();
+    
+    if(goalsCovered > 0){
+      level += 1;
+      if (level > totalNum){
+        //finish "world"
+      } else {
+        setMap(levels[level]);
+      }
+    }
+  } else {
+    noMove = true;
   }
 })
+
+function moveEnemy(enemy){
+  let rand = Math.floor(Math.random() * 4);
+  if(rand === 1){
+    enemy.x += 1;
+  } else if (rand === 2){
+    enemy.x -= 1;
+  } else if (rand === 3){
+    enemy.y += 1;
+  } else if (rand === 4){
+    enemy.y -= 1;
+  }
+}
+
+function checkMovement(){
+  let wallsCovered = tilesWith(player, wall).length;
+  if(wallsCovered > 0){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function checkEnemyMovement(){
+  let wallsCovered = tilesWith(enemy, wall).length;
+  if(wallsCovered > 0){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+//Debugger line: addText("test", {x:1,y:1});
