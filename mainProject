@@ -8,14 +8,16 @@
 
 //sprites
 const player = "p";
+const enemy1 = "e";
 const wall = "w";
 const goal = "g";
-const enemy1 = "e";
 const key = "k";
-const push = "pu";
+const push = "p";
+const lockedgoal = "l";
 //variables
 const totalNum = 20;
 let noMove = false;
+let keyCheck = false;
 
 setLegend(
 	[ player, bitmap`
@@ -102,21 +104,38 @@ D55769909996755D
 ......9999......
 ......9999......
 ......99........
-................`]
+................`],
+    [ lockedgoal, bitmap`
+0...DDDDDDDD...0
+0..D55555555D..0
+00D5577777755D00
+.00776666667700.
+D50069999996005D
+D57000000000075D
+D5760LLLLLL0675D
+D5760LL11LL0675D
+D5760LL11LL0675D
+D5760LL1LLL0675D
+D57600LLLL00675D
+D55760000006755D
+.D577666666775D.
+..D5577777755D..
+...D55555555D...
+....DDDDDDDD....`]
 )
 
-setSolids([player, enemy1])
+setSolids([enemy1])
 
 let level = 0
 const levels = [
 	map`
-wwwg...
+wwwl...
 e...w..
 .wwww.w
 ...p..w
 .wwww.w
 .w..w.w
-.....ew`,
+k....ew`,
     map`
 p.w`,
 ]
@@ -128,32 +147,52 @@ setPushables({
 })
 
 onInput("s", () => {
-  getFirst(player).y += 1;
-  if(checkMovement() === true){
+  clearText();
+  if(getFirst(player).y < width() - 1){
+    getFirst(player).y += 1;
+  } else {
+    noMove = true;
+  }
+  if(checkMovement(player, wall) === true || checkMovement(player, enemy1)){
     getFirst(player).y -= 1;
     noMove = true;
   }
 })
 
 onInput("a", () => {
-  getFirst(player).x -= 1;
-  if(checkMovement() === true){
+  clearText();
+  if(getFirst(player).x > 0){
+    getFirst(player).x -= 1;
+  } else {
+    noMove = true;
+  }
+  if(checkMovement(player, wall) === true || checkMovement(player, enemy1)){
     getFirst(player).x += 1;
     noMove = true;
   }
 })
 
 onInput("d", () => {
-  getFirst(player).x += 1;
-  if(checkMovement() === true){
+  clearText();
+  if(getFirst(player).x < height() - 1){
+    getFirst(player).x += 1;
+  } else {
+    noMove = true;
+  }
+  if(checkMovement(player, wall) === true || checkMovement(player, enemy1)){
     getFirst(player).x -= 1;
     noMove = true;
   }
 })
 
 onInput("w", () => {
-  getFirst(player).y -= 1;
-  if(checkMovement() === true){
+  clearText();
+  if(getFirst(player).y > 0){
+    getFirst(player).y -= 1;
+  } else {
+    noMove = true;
+  }
+  if(checkMovement(player, wall) === true || checkMovement(player, enemy1)){
     getFirst(player).y += 1;
     noMove = true;
   }
@@ -161,13 +200,29 @@ onInput("w", () => {
   
 afterInput(() => {
   if(noMove === false){
-    let goalsCovered = tilesWith(goal, player).length;
-    
+
+    //Enemy checks
     const allEnemies = getAll(enemy1);
     allEnemies.forEach((enemy1) => moveEnemy(enemy1));
+
+    //Key checks
+    let keysCovered = tilesWith(player, key).length;
+    if(keysCovered > 0){
+      let tempx = getFirst(player).x;
+      let tempy = getFirst(player).y;
+      getFirst(player).x = 0;
+      getFirst(player).y = 0;
+      clearTile(tempx, tempy);
+      getFirst(player).x = tempx;
+      getFirst(player).y = tempy;
+      /*tempx = getFirst(goal).x;
+      tempy = getFirst(goal).y;
+      clearTile(tempx, tempy);
+      addSprite(tempx, tempy, l);*/
+    }
     
-    moveEnemy();
-    
+    //End of level checks
+    let goalsCovered = tilesWith(goal, player).length;
     if(goalsCovered > 0){
       level += 1;
       if (level > totalNum){
@@ -176,35 +231,51 @@ afterInput(() => {
         setMap(levels[level]);
       }
     }
+
+    let lockedGoalsCovered = tilesWith(lockedgoal, player).length;
+    if(lockedGoalsCovered > 0){
+      addText("You Need A Key!", {x:Math.floor(width()/2), y:Math.floor(height()/2), color:color`5`});
+    }
+    
   } else {
-    noMove = true;
+    noMove = false;
   }
 })
 
 function moveEnemy(enemy){
-  let rand = Math.floor(Math.random() * 4);
-  if(rand === 1){
-    enemy.x += 1;
-  } else if (rand === 2){
-    enemy.x -= 1;
-  } else if (rand === 3){
-    enemy.y += 1;
-  } else if (rand === 4){
-    enemy.y -= 1;
+  let checking = true;
+  while(checking === true){
+    let rand = Math.floor(Math.random() * 4);
+    if(rand === 0 && enemy.x < width() - 1){
+      enemy.x += 1;
+      checking = checkMovement(enemy1, wall) || checkMovement(enemy1, goal) || checkMovement(enemy1, player);
+      if(checking === true){
+        enemy.x -= 1;
+      }
+    } else if (rand === 1 && enemy.x > 0){
+      enemy.x -= 1;
+      checking = checkMovement(enemy1, wall) || checkMovement(enemy1, goal) || checkMovement(enemy1, player);
+      if(checking === true){
+        enemy.x += 1;
+      }
+    } else if (rand === 2 && enemy.y < height() - 1){
+      enemy.y += 1;
+      checking = checkMovement(enemy1, wall) || checkMovement(enemy1, goal) || checkMovement(enemy1, player);
+      if(checking === true){
+        enemy.y -= 1;
+      }
+    } else if (rand === 3 && enemy.y > 0){
+      enemy.y -= 1;
+      checking = checkMovement(enemy1, wall) || checkMovement(enemy1, goal) || checkMovement(enemy1, player);
+      if(checking === true){
+        enemy.y += 1;
+      }
+    }
   }
 }
 
-function checkMovement(){
-  let wallsCovered = tilesWith(player, wall).length;
-  if(wallsCovered > 0){
-    return true;
-  } else {
-    return false;
-  }
-}
-
-function checkEnemyMovement(){
-  let wallsCovered = tilesWith(enemy, wall).length;
+function checkMovement(var1, var2){
+  let wallsCovered = tilesWith(var1, var2).length;
   if(wallsCovered > 0){
     return true;
   } else {
