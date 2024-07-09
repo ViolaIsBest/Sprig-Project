@@ -6,7 +6,8 @@
 @addedOn: 2023-08-08
 */
 
-//Next Up: Making push blocks interactable with walls, enemies, etc.
+//Next Up: How to make boxes interact with boxes??? Not sure
+//Next Up: Switches!
 
 //sprites
 const player = "p";
@@ -15,6 +16,7 @@ const wall = "w";
 const goal = "g";
 const key = "k";
 const push = "z";
+const temp = "t";
 const lockedgoal = "l";
 //variables
 const totalNum = 20;
@@ -139,6 +141,23 @@ D55760000006755D
 .0CCCC9999CCCC0.
 .0CCCCC99CCCCC0.
 .00000000000000.
+................`],
+    [ temp, bitmap`
+................
+................
+................
+................
+................
+................
+................
+.......00.......
+................
+................
+................
+................
+................
+................
+................
 ................`]
 )
 
@@ -147,13 +166,13 @@ setSolids([enemy1])
 let level = 0
 const levels = [
 	map`
-w..z..w
+w.www.w
+ww..www
 w.....w
-w.....w
-www.www
-z..p..z
+w..eeee
 .......
-...z...`,
+zp.....
+.......`,
     map`
 p.w`,
     map`
@@ -254,7 +273,7 @@ afterInput(() => {
       clearTile(tempx, tempy);
       addSprite(tempx, tempy, goal);
     }
-
+    
     //End of level checks
     let goalsCovered = tilesWith(goal, player).length;
     if(goalsCovered > 0){
@@ -331,60 +350,82 @@ function resetLevel(){
 
 function checkPush(dir){
   let pushCovered = tilesWith(player, push).length;
-  let box;
   let tempx = getFirst(player).x;
   let tempy = getFirst(player).y;
-  let temps;
   if(pushCovered > 0){
     if(dir === "xr"){
-      temps = addSprite(tempx + 1, tempy, push);
-      if(!runCheck(push)){
-        getFirst(player).x += 1;
-        if(tempx > 0){
-          clearTile(tempx, tempy);
-          addSprite(tempx - 1, tempy, push);
-          getFirst(player).x -= 1;
-        }
-      }
-      temps.remove();
-    } else if (dir === "xl"){
-      temps = addSprites(tempx - 1, tempy, push);
-      if(!runCheck(push)){
+      getFirst(player).x += 1;
+      if(tempx > 0){
+        clearTile(tempx, tempy);
+        addSprite(tempx - 1, tempy, push);
         getFirst(player).x -= 1;
-        if(tempx < width() - 1){
-          clearTile(tempx, tempy);
-          addSprite(tempx + 1, tempy, push);
-          getFirst(player).x += 1;
-        }
+      } else {
+        noMove = true;
       }
-      temps.remove();
+      runPushCheck(tempx - 1, tempy, "xr");
+    } else if (dir === "xl"){
+      getFirst(player).x -= 1;
+      if(tempx < width() - 1){
+        clearTile(tempx, tempy);
+        addSprite(tempx + 1, tempy, push);
+        getFirst(player).x += 1;
+      } else {
+        noMove = true;
+      }
+      runPushCheck(tempx + 1, tempy, "xl");
     } else if (dir === "yu"){
-      temps = addSprites(tempx, tempy - 1, push);
-      if(!runCheck(push)){
-        getFirst(player).y -= 1;
-        if(tempy < height() - 1){
-          clearTile(tempx, tempy);
-          addSprite(tempx, tempy + 1, push);
-          getFirst(player).y += 1;
-        }
-      }
-      temps.remove();
-    } else if (dir === "yd"){
-      temps = addSprites(tempx, tempy + 1, push);
-      if(!runCheck(push)){
+      getFirst(player).y -= 1;
+      if(tempy < height() - 1){
+        clearTile(tempx, tempy);
+        addSprite(tempx, tempy + 1, push);
         getFirst(player).y += 1;
-        if(tempy > 0){
-          clearTile(tempx, tempy);
-          addSprite(tempx, tempy - 1, push);
-          getFirst(player).y -= 1;
-        }
+      } else {
+        noMove = true;
       }
-      temps.remove();
+      runPushCheck(tempx, tempy + 1, "yu");
+    } else if (dir === "yd"){
+      getFirst(player).y += 1;
+      if(tempy > 0){
+        clearTile(tempx, tempy);
+        addSprite(tempx, tempy - 1, push);
+        getFirst(player).y -= 1;
+      } else {
+        noMove = true;
+      }
+      runPushCheck(tempx, tempy - 1, "yd");
     }
   }
 }
 
-function checkPushSolids(){
+function runPushCheck(x, y, dir){
+  let checking = false;
+  if(checkMovement(push, wall)){
+    clearTile(x, y);
+    addSprite(x, y, wall);
+    checking = true;
+  }
+  if(checkMovement(push, enemy1)){
+    clearTile(x, y);
+    addSprite(x, y, enemy1);
+    checking = true;
+  }
+  
+  if(checking === true){
+    noMove = true;
+    if(dir === "xr"){
+      addSprite(x + 1, y, push);
+      getFirst(player).x += 1;
+    } else if (dir === "xl"){
+      addSprite(x - 1, y, push);
+      getFirst(player).x -= 1;
+    } else if (dir === "yu"){
+      addSprite(x, y - 1, push);
+      getFirst(player).y -= 1;
+    } else if (dir === "yd"){
+      addSprite(x, y + 1, push);
+      getFirst(player).y += 1;
+    }
+  }
 }
 
 function runCheck(obj){
